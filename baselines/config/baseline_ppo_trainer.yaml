@@ -1,0 +1,65 @@
+hydra:
+  searchpath:
+    - file:///mnt/petrelfs/jiangshuyang/repo/verl/verl/trainer/config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+data:
+  gen_batch_size: ${data.train_batch_size}
+
+reward_model:
+  overlong_buffer: 
+    enable: False # We try to avoid forgetting to set enable
+    len: 0
+    penalty_factor: 0.0
+    log: False
+
+
+algorithm:
+  gtpo:
+
+    alpha1: 1 
+    alpha2: 0.1
+
+  grpo_s:
+    beta1: 1
+    beta2: 0.1  
+  
+  edge_grpo:
+    aha_begin: Wait! Something is wrong here.
+    give_answer: "\nWait! Something is wrong here. After verification, the correct answer is \\boxed{answer}."
+  
+  entropy_adv:
+    alpha: 0.4
+    kappa: 2
+  
+  miner:
+    correct_scale: 1
+    credit_method: uniform
+    incorrect_scale: 0.0
+    static_alpha: True 
+    min_alpha: 0
+    max_alpha: 0.04
+    gamma: 2
+    clip_high: 0.2
+    clip_low: 0
+    scale_by_normal: 0
+    norm_level: group
+    threshold: -1
+  
+  filter_groups:
+    _target_: verl.trainer.config.FilterGroupsConfig
+    enable: False # We try to avoid forgetting to set enable
+    filter_allc: True 
+    filter_allw: True
+    metric: seq_final_reward # acc / score / seq_reward / seq_final_reward / ...
+    max_num_gen_batches: 10 # Non-positive values mean no upper limit
+
+
+actor_rollout_ref:
+  actor:
+    _target_: baselines.config.BaselineActorConfig
+    skip_contradict_token: False
+    skip_overlong: True
