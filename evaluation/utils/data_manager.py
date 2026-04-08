@@ -35,12 +35,9 @@ class DataManager:
         # import pyarrow.parquet as pq
         import pandas as pd
 
-        # Read the Parquet file
-        # table = pq.read_par(parquet_file)
-        # df = table.to_pandas()
+
         df = pd.read_parquet(parquet_file)
 
-        # Convert to python dict
         new_items = []
         for index, row in df.iterrows():
             new_item = {
@@ -154,20 +151,20 @@ class DataManager:
 
 def tree2list(root):
     def dfs(node, current_path, all_paths):
-        # 添加当前节点的值到路径
+
         current_path.append([node["state"], node["value"], node["rollout_value"]])
-        # 如果是叶子节点，保存路径
-        if not node["children"]:  # children 为空时
-            all_paths.append(current_path[:])  # 深拷贝保存路径
+
+        if not node["children"]:  
+            all_paths.append(current_path[:])  
         else:
             # 遍历子节点
             for child in node["children"]:
                 dfs(child, current_path, all_paths)
         
-        # 回溯：移除当前节点
+
         current_path.pop()
 
-    # 初始化
+
     all_paths = []
     dfs(root, [], all_paths)
     return all_paths

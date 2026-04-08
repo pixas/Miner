@@ -1,6 +1,6 @@
 hydra:
   searchpath:
-    - file:///mnt/petrelfs/jiangshuyang/repo/verl/verl/trainer/config
+    - verl/trainer/config
 
 defaults:
   - ppo_trainer

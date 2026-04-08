@@ -1,13 +1,13 @@
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import copytree
-from tempfile import TemporaryDirectory
+
 from time import sleep
-from typing import Union
+
 from transformers import AutoConfig
 from vllm import LLM, SamplingParams 
 import os 
-from utils.s3_client import client
+
 import yaml
 import torch
 import shutil
@@ -70,16 +70,14 @@ class VLLMRollout:
         gpu_memory_utilization = kwargs.pop("gpu_memory_utilization", 0.9)  
         hf_model_path = kwargs.pop("hf_model_path", None)
         
-        # if os.path.exists(os.path.join(model, "tokenizer.json")):
-        print(os.path.join(model, "tokenizer.json"))
-        if client.exists(os.path.join(model, "tokenizer.json")):
+        
+        if os.path.exists(os.path.join(model, "tokenizer.json")):
             self.config = AutoConfig.from_pretrained(model)
             model_path = model
         else:
-            # tmpdir = '/mnt/petrelfs/jiangshuyang/checkpoints/tmp_af9db1b123386e68'
-            # continue
+
             from evaluation.models.base_model import convert_fsdp_checkpoints_to_hfmodels
-            # # 创建一个随机字符串
+
             
             random_str = "tmp_" + os.urandom(8).hex()
             tmpdir = os.path.join(os.path.expanduser("~/checkpoints"), random_str)
@@ -95,13 +93,11 @@ class VLLMRollout:
             convert_fsdp_checkpoints_to_hfmodels(model, tmpdir, hf_model_path=hf_model_path)
             # copy all the files in the os.path.join(model, 'huggingface') to the tmp dir
             # for file in os.listdir(hf_model_path):
-            # for file in client.listdir(hf_model_path):
+
             for file in ['config.json', 'tokenizer.json', 'generation_config.json', 'tokenizer_config.json']:
                 src = os.path.join(hf_model_path, file)
                 dst = os.path.join(tmpdir, file)
-                # print(src, dst)
-                # if os.path.isdir(src):
-                # if client.is
+
                 if os.path.isdir(src):
                     copytree(src, dst)
                 else:

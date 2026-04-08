@@ -2,7 +2,7 @@ import argparse
 import os 
 
 from evaluation.models.base_model import convert_fsdp_checkpoints_to_hfmodels
-from transformers import AutoTokenizer, AutoConfig
+from transformers import AutoTokenizer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

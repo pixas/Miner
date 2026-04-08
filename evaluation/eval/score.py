@@ -85,28 +85,6 @@ def single_choice_score(prediction, eval_info):
         return False
     
 
-    # """The scoring function for MedQA.
-
-
-    # Args:
-    #     solution_str: the solution text
-    #     ground_truth: the ground truth
-    #     method: the method to extract the solution, choices are 'strict' and 'flexible'
-    #     format_score: the score for the format
-    #     score: the score for the correct answer
-    # """
-    # answer = extract_solution(solution_str=prediction, method='strict')
-    # ground_truth = eval_info["answer"]
-    # if answer is None:
-    #     return 0
-    # else:
-    #     if len(answer) == 1 and answer == ground_truth[0]:
-    #         return True  
-    #     if ground_truth[0] + "." in answer:
-    #         return True 
-    #     if ground_truth.split(".")[1].strip().lower() in answer.lower():
-    #         return True 
-    #     return False
 
 
 
@@ -199,11 +177,7 @@ def gpqa_score(prediction, eval_info) -> float:
     _, cleaned_ground_truth = eval_info['cleaned_answer'].split(") ", 1)
     option, option_text = ground_truth.split(") ", 1)
 
-    # ANSWER_PATTERN_MULTICHOICE = r"(?i)Answer[ \t]*:[ \t]*\$?([A-D])\$?"
-    # match = re.search(ANSWER_PATTERN_MULTICHOICE, solution_str)
-    # extracted_answer = match.group(1) if match else None
-    # if extracted_answer is None:
-    #     # try to extract by \boxed{}
+
     extracted_answer = parse(solution_str)
     
     if not extracted_answer:
@@ -228,28 +202,7 @@ def gpqa_score(prediction, eval_info) -> float:
             score = score or True 
         else:
             score = score or bool(compute_score(solution_str, cleaned_ground_truth, consider_length=False))
-    # tail_match = re.search(r"therefore, the answer is[:：]?\s*(.*)", solution_str.split("\n")[-1], re.IGNORECASE | re.DOTALL)
-    # if tail_match:
-    #     tail_content = tail_match.group(1).strip()
-    #     if tail_content:
-    #         patterns = [
-    #             rf"\b{re.escape(option)}\b",
-    #             rf"\({re.escape(option)}\)",
-    #             rf"{re.escape(option)}\)",
-    #             rf"option\s+{re.escape(option)}\b",
-    #             rf"\\boxed\{{\s*{re.escape(option)}\s*\}}",
-    #         ]
-    #         for pattern in patterns:
-    #             if re.search(pattern, tail_content, re.IGNORECASE):
-    #                 score = 1.0
-    #                 break
-    #     if not score and option_text:
-    #         def _normalize(text: str) -> str:
-    #             return re.sub(r"[^a-z0-9]+", "", text.lower())
-    #         normalized_option_text = _normalize(option_text)
-    #         normalized_tail = _normalize(tail_content) if tail_content else ""
-    #         if normalized_option_text and normalized_option_text in normalized_tail:
-    #             score = 1.0
+
     
     return score
 
@@ -323,8 +276,7 @@ def score_task(task: dict, task_name: str = None):
         
     elif isinstance(task["trajectory"], list):
         accuracy = [score_func(trajectory, eval_info=task["task"]["eval"]) for trajectory in task["trajectory"]]
-        # predictions = [extract_predicted_answer(trajectory) for trajectory in task["trajectory"]]
-        # print(accuracy, flush=True)
+
         
         predictions = [extract_math_answer(trajectory, task["task"]["dataset"]) for trajectory in task["trajectory"]]
         # print(predictions, flush=True)
@@ -341,19 +293,13 @@ def score_task(task: dict, task_name: str = None):
             except:
                 pred = ""
             simplified_predictions.append(pred)
-        # print(simplified_predictions, flush=True)
+
         predictions = simplified_predictions
-        # predictions = [str(simplify(pred)) if isinstance(pred, str) else pred for pred in predictions]
-        # if len(predictions) == 0:
-        #     import pdb
-        #     pdb.set_trace()
-            
+
         vote_prediction = Counter(predictions).most_common()[0][0]
         vote_index = predictions.index(vote_prediction)
         vote_acc = accuracy[vote_index]
-        # vote_prediction = "</think>\\boxed{" + vote_prediction + "}"
-        # vote_acc = score_func("</think>\\boxed{" + vote_prediction + "}", eval_info=task["task"]["eval"])
-        # vote_acc = score_func(vote_prediction, eval_info=task["task"]["eval"])
+
         score["acc"] = vote_acc
         score["avg_acc"] = sum(accuracy) / len(accuracy)
         score["least_acc"] = float(sum(accuracy) > 0)

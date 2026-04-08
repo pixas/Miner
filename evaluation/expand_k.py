@@ -1,10 +1,5 @@
 
-# 写一个脚本，可以接受一个路径，这个路径类似如下
-# /mnt/petrelfs/jiangshuyang/repo/efficient_RL/results/aime2024/deepscaler_qwen34b_grpo_bapo_0.8_0.95_1.2_2.0_target_0.5_global_step_314_sc128
-# 路径下，有result.json，里面存放了模型的路径名，用来加载模型用，以及cache.jsonl，是模型在数据集上的输出，每个问题有N个轨迹
-# 现在，这个脚本需要扩大每个问题的输出数量， 比如原来每个问题有5个轨迹，现在需要扩展到N个轨迹，N通过命令行输入
-# 仿照test.py中对应的逻辑，加载模型，对每个问题进行推理，直到每个问题有N个轨迹为止
-# 当然，需要服用原本就有的K个轨迹，不然有点浪费
+
 import os
 import json
 import argparse
@@ -286,7 +281,7 @@ def main():
     # Build expansion list and generate in batches
     expansions: List[str] = []
     expansion_owner: List[str] = []
-    # todo: 163行打印的logs数量只有1/num_chunks * total，但是need_per_id会把所有的id都打印出来，这是为什么
+    
     print(need_per_id)
     for tid, need in need_per_id.items():
         prompt_text = prompt_per_id[tid]
@@ -307,8 +302,7 @@ def main():
             continue
         if len((log.get("trajectory") or [])) >= target_k:
             completed_tids.add(tid)
-    # 如果某个question的target_k个轨迹已经生成完毕，及时save
-    # 然后支持resume，允许从save_cache_path中读取已经生成的序列
+
     while idx < len(expansions):
         batch_prompts: List[str] = []
         batch_owners: List[str] = []
@@ -339,7 +333,7 @@ def main():
         if id2log is None:
             id2log = {log["task"]["id"]: log for log in logs if "task" in log and "id" in log["task"]}
 
-        newly_completed = False
+
         for owner, text, token_id_list in zip(batch_owners, texts, tokens):
             log = id2log.get(owner)
             if log is None:
@@ -347,10 +341,7 @@ def main():
             log.get("trajectory", []).append(text)
             # tokens
             tok_len = len(token_id_list)
-            # if tokenizer is not None:
-            #     tok_len = len(tokenizer(text, add_special_tokens=False)["input_ids"]) if text else 0
-            # else:
-            #     tok_len = len(text.split()) if text else 0
+
             log.get("tokens", []).append(tok_len)
             # keep time as previous per-problem avg or set a tiny increment; we won't change here
             if owner not in completed_tids and len(log.get("trajectory", [])) >= target_k:
@@ -358,21 +349,10 @@ def main():
                 newly_completed = True
                 write_cache(save_cache_path, [log])
 
-        # progress.update(len(texts))
-        # for log in logs:
-        #     log["score"] = score_task(log)
-        # if newly_completed:
-        #     write_cache(save_cache_path, logs)
+
     progress.close()
 
-    # Recompute score for updated logs and save
-    # for log in logs:
-    #     log["score"] = score_task(log)
 
-
-    # write_cache(save_cache_path, logs)
-
-    # Update result.json summary
 
     recompute_result_json(save_result_path, logs, saved_args)
     elapsed = time.time() - start_time

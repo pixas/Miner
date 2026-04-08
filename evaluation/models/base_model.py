@@ -11,9 +11,9 @@ import torch
 import torch.nn.functional as F
 
 from peft import PeftModel, LoraConfig
-from transformers import AutoTokenizer, AutoModelForCausalLM, StoppingCriteria, StoppingCriteriaList, LogitsProcessor, LogitsProcessorList
-# from verl.utils.checkpoint.s3_client import client
-from utils.s3_client import client
+from transformers import AutoTokenizer, AutoModelForCausalLM, LogitsProcessor, LogitsProcessorList
+
+
 
 from transformers import AutoConfig, AutoModelForTokenClassification, AutoModelForCausalLM, AutoModelForVision2Seq
 from tempfile import TemporaryDirectory
@@ -88,8 +88,8 @@ def convert_fsdp_checkpoints_to_hfmodels(local_dir, hf_path, hf_model_path):
     # copy rank zero to find the shape of (dp, fsdp)
     rank = 0
     world_size = 0
-    # for filename in os.listdir(local_dir):
-    for filename in client.listdir(local_dir):
+    for filename in os.listdir(local_dir):
+    
         match = re.match(r"model_world_size_(\d+)_rank_0\.pt", filename)
         if match:
             world_size = match.group(1)  
@@ -97,8 +97,9 @@ def convert_fsdp_checkpoints_to_hfmodels(local_dir, hf_path, hf_model_path):
     assert world_size, "No model file with the proper format"
     
     path = os.path.join(local_dir, f'model_world_size_{world_size}_rank_{rank}.pt')
-    state_dict = client.load_checkpoint(path, map_location='cpu')
-    # state_dict = torch.load(os.path.join(local_dir, f'model_world_size_{world_size}_rank_{rank}.pt'), map_location='cpu')
+    state_dict = torch.load(path, map_location='cpu')
+    
+
     pivot_key = sorted(list(state_dict.keys()))[0]
     weight = state_dict[pivot_key]
     assert isinstance(weight, torch.distributed._tensor.DTensor)
@@ -130,8 +131,7 @@ def convert_fsdp_checkpoints_to_hfmodels(local_dir, hf_path, hf_model_path):
 
     def process_one_shard(rank):
         model_path = os.path.join(local_dir, f'model_world_size_{world_size}_rank_{rank}.pt')
-        state_dict = client.load_checkpoint(model_path, map_location='cpu', weights_only=False)
-        # state_dict = torch.load(model_path, map_location='cpu', weights_only=False)
+        state_dict = torch.load(model_path, map_location='cpu', weights_only=False)
         model_state_dict_lst[rank] = state_dict
         return state_dict
 
@@ -202,7 +202,7 @@ def convert_fsdp_checkpoints_to_hfmodels(local_dir, hf_path, hf_model_path):
     del model
 
 with open(os.path.join(current_dir, 'config.yaml'), 'r') as f:
-    # 将YAML内容转换为字典
+
     LOCAL_MODEL_PATHS = yaml.safe_load(f)
 
 def disable_torch_init():
@@ -259,14 +259,7 @@ class Local_Model(Base_Model):
             self.device = "cuda:0"
         else:
             self.device = "npu:0"
-        # self.device = "npu:0" if torch.npu.is_available() else "cuda:0"
-        # if "gemma-3" in self.model_path:
-        #     from transformers import Gemma3ForConditionalGeneration
-        #     model_cls = Gemma3ForConditionalGeneration
-        # else:
-        #     model_cls = AutoModelForCausalLM
-        # self.model = AutoModelForCausalLM.from_pretrained(self.model_path,
-        #     torch_dtype=torch.float16, trust_remote_code=True).to(self.device)
+
         self.init_model()
         self.tokenizer.padding_side = "left" 
         
@@ -432,18 +425,17 @@ class APIModel(Base_Model):
             results = [None] * len(inputs)
             def task(instruction):
                 return self.call_chatgpt(instruction, temperature=temperature, top_p=0.95, max_tokens=max_new_tokens, n=sample_num, wrap_chat=wrap_chat)
-            # 使用ThreadPoolExecutor来处理多线程
+
             # Get number of CPU cores for maximum thread workers
             # max_workers = min(32, os.cpu_count() or 1)  # Limit to 32 threads max
             max_workers = os.cpu_count()
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # 提交所有任务，并保留每个future的索引
+
                 futures = {executor.submit(task, instruction): i for i, instruction in enumerate(inputs)}
-                
-                # 获取所有任务的结果，并根据索引放入results中
+
                 for future in concurrent.futures.as_completed(futures):
                     try:
-                        # 按照原始索引顺序存储结果
+
                         index = futures[future]
                         results[index] = future.result()
                     except Exception as e:
@@ -562,7 +554,3 @@ class APIModel(Base_Model):
             return self.get_oai_completion(prompt, **kwargs)
 
 
-if __name__ == "__main__":
-    model = APIModel("/mnt/petrelfs/jiangshuyang/checkpoints/DeepSeek-R1-Distill-Qwen-1.5B", url="10.140.54.16:10041")
-    outputs = model([{"role": "user", "content": "what is your name"}], temperature=0.6, wrap_chat=True, max_new_tokens=10)
-    print(outputs)

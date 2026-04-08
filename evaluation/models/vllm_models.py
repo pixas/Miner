@@ -1,20 +1,14 @@
 import os
-import torch
-import re
+
 from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
-from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Tuple
-from torch.distributed._tensor import DTensor, Shard, Placement
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from shutil import copytree
-from verl.utils.checkpoint.s3_client import client  
+
 
 from evaluation.models.base_model import Base_Model, convert_fsdp_checkpoints_to_hfmodels
-from transformers import AutoConfig, AutoModelForTokenClassification, AutoModelForCausalLM, AutoModelForVision2Seq
-
-# os.environ["VLLM_INSTALL_PUNICA_KERNELS"] = 1
+from transformers import AutoConfig
 
 
 
@@ -36,8 +30,7 @@ class VLLM_Model(Base_Model):
     def init_model(self, *args, **kwargs):
         max_model_len = kwargs.pop("max_model_len", 32000)
         model = kwargs.pop("model", None)
-        # if os.path.exists(os.path.join(model, "tokenizer.json")):
-        if client.exists(model, "tokenizer.json"):
+        if os.path.exists(os.path.join(model, "tokenizer.json")):
             model_path = model
         else:
             tmpobj = TemporaryDirectory()
@@ -60,27 +53,13 @@ class VLLM_Model(Base_Model):
             # print all the files in the tmp dir
             print(f"Files in the tmp dir: {os.listdir(tmpdir)}")
             model_path = tmpdir
-        # while True:
-        #     try:
-  
-        #         self.model = LLM(*args, model=model_path, max_model_len=max_model_len, **kwargs)
-        #     except ValueError as e:
-        #         if "The model's max seq len " in str(e):
-        #             max_model_len //= 2
-        #             # clear cache
-        #             torch.cuda.empty_cache()
-        #             print(f"Reduce max_model_len to {max_model_len}")
-        #         else:
-        #             raise e
-        #     else:
-        #         break
+
         self.model = LLM(*args, model=model_path, max_model_len=max_model_len,
             skip_tokenizer_init=False,
             enable_chunked_prefill=True,
             enable_sleep_mode=True,
             **kwargs)
-        # check if model_path is a tmp dir
-        # if so, delete the tmp dir
+
         if "tmp" in model_path:
             tmpobj.cleanup()
     
