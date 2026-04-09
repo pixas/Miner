@@ -1,6 +1,7 @@
 # MINER
 
-Official code repository for our ACL 2026 Main paper.
+Official code repository for our ACL 2026 Main paper: **MINER: Mining Intrinsic Mastery for Data-Efficient RL in Large
+Reasoning Models**
 
 [![Python](https://img.shields.io/badge/Python-3.10-blue)](#environment)
 [![Framework](https://img.shields.io/badge/RL-verl-orange)](#training)
