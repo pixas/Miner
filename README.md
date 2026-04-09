@@ -7,7 +7,8 @@ Official code repository for our ACL 2026 Main paper.
 [![Backend](https://img.shields.io/badge/Rollout-vLLM-green)](#training)
 
 📄 Paper: [ACL 2026 Main Paper](https://arxiv.org/pdf/2601.04731)  
-🤗 Hugging Face: [Coming Soon](<huggingface-model-link>)  
+🤗 Hugging Face: [Miner-4B](https://huggingface.co/pixas/Miner-4B)
+🤗 Hugging Face: [Miner-8B](https://huggingface.co/pixas/Miner-8B)
 📝 Project Page: [Coming Soon](<project-page-link>)
 
 MINER is built on top of `verl` and focuses on reinforcement learning for better exploration capability and higher training efficiency. This repository includes:
